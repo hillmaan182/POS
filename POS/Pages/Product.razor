@@ -1,38 +1,30 @@
 ﻿@page "/products"
 @inject HttpClient Http
+@using Domain.Model
 <h3>Product List</h3>
+<MudButton Href="/products/add" Variant="Variant.Outlined">Add Product</MudButton>
 @if (products == null)
 {
     <p><em>Loading...</em></p>
 }
 else
 {
-    <MudDataGrid Items="@products.Take(4)">
-    <Columns>
-        <PropertyColumn Property="x => x.Id" Title="Nr" />
-        <PropertyColumn Property="x => x.ProductName" />
-        <PropertyColumn Property="x => x.ProductType" />
-    </Columns>
-</MudDataGrid>
-   @* <table class="table">
-        <thead>
-            <tr>
-                <th>Id</th>
-                <th>Name</th>
-                <th>Price</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var product in products)
-            {
-                <tr>
-                    <td>@product.Id</td>
-                    <td>@product.ProductName</td>
-                    <td>@product.ProductType</td>
-                </tr>
-            }
-        </tbody>
-    </table>*@
+    <MudGrid Spacing="20" Justify="Justify.Center">
+        @foreach (var item in products)
+        {
+            <MudItem xs="4">
+                <MudCard>
+                    <MudCardMedia Image="@item.ProductImage" Height="200" Width="100" />
+                    <MudCardContent>
+                        <MudText Typo="Typo.h5">@item.ProductName</MudText>
+                        <MudText Typo="Typo.h6">Rp. @item.ProductPrice</MudText>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+        }
+    </MudGrid>
+
 }
 @code {
     private List<Domain.Model.Product> products;
@@ -40,5 +32,5 @@ else
     {
         products = await Http.GetFromJsonAsync<List<Domain.Model.Product>>("api/Product");
     }
-    
+
 }

@@ -15,6 +15,7 @@ builder.Services.AddDbContext<DataContext>(options =>
 
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IImageDataRepository, ImageDataRepository>();
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>

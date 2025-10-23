@@ -9,7 +9,7 @@ namespace Domain.DataContext
         {
         }
         public DbSet<Product> Product { get; set; } = default!;
-        
+        public DbSet<ImageData> ImageData { get; set; } = default!; 
        
 
     }

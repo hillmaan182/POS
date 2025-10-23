@@ -3,15 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32519.379
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "POS", "POS\POS.csproj", "{EE1EBCA8-D14A-4354-84EB-D52850C3CFD3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "POS", "POS\POS.csproj", "{EE1EBCA8-D14A-4354-84EB-D52850C3CFD3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Domain", "Domain\Domain.csproj", "{0C045AF2-CACD-49AF-9DF7-F9B7FBFCD363}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Domain", "Domain\Domain.csproj", "{0C045AF2-CACD-49AF-9DF7-F9B7FBFCD363}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Application", "Application\Application.csproj", "{A3F44A04-B1D4-49EB-B4AD-7F1D82614BCB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Application", "Application\Application.csproj", "{A3F44A04-B1D4-49EB-B4AD-7F1D82614BCB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure", "Infrastructure\Infrastructure.csproj", "{F655D9D9-403C-4869-B537-6E9D2C153825}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infrastructure", "Infrastructure\Infrastructure.csproj", "{F655D9D9-403C-4869-B537-6E9D2C153825}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "POSApi", "POSApi\POSApi.csproj", "{11F3FF20-9A5E-4E3B-9540-9AD5CE99BCC7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "POSApi", "POSApi\POSApi.csproj", "{11F3FF20-9A5E-4E3B-9540-9AD5CE99BCC7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

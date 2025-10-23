@@ -15,5 +15,6 @@ namespace Infrastructure.Repository
         {
             return db.Product.ToList();
         }
+       
     }
 }
