@@ -4,6 +4,8 @@ Create Simple Purchase Order System
 - Product Data
 - Order Payment
 - Recap Payment
+- JWT Authentication
+- .NET Core Authorization
 - Payment API (Hitpay Sandbox)
 
 Technologies
