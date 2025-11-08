@@ -1,0 +1,41 @@
+﻿@*<MudPaper Height="500px" Style="overflow:hidden; position:relative;">
+    <MudDrawerContainer Class="mud-height-full">
+        <MudDrawer @bind-Open="@_open" Fixed="false" Elevation="1" Variant="@DrawerVariant.Mini" OpenMiniOnHover="true" Breakpoint="Breakpoint.None">
+              <MudDrawerHeader>
+                <MudText Typo="Typo.h6">My App</MudText>
+            </MudDrawerHeader>
+            <MudNavMenu>
+                <MudNavLink Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Store">Store</MudNavLink>
+                <MudNavLink Match="NavLinkMatch.Prefix" Href="products" Icon="@Icons.Material.Filled.Coffee">Products</MudNavLink>
+                <MudNavLink Match="NavLinkMatch.Prefix" Href="order" Icon="@Icons.Material.Filled.Calculate">Order</MudNavLink>
+                <MudNavLink Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Group">Community</MudNavLink>
+            </MudNavMenu>
+        </MudDrawer>
+
+    </MudDrawerContainer>
+</MudPaper>*@
+<MudNavMenu>
+    <Microsoft.AspNetCore.Components.Authorization.AuthorizeView>
+        <Authorized>
+            <MudNavLink Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Store">Store</MudNavLink>
+            <MudNavLink Match="NavLinkMatch.Prefix" Href="products" Icon="@Icons.Material.Filled.Coffee">Products</MudNavLink>
+            <MudNavLink Match="NavLinkMatch.Prefix" Href="inventory" Icon="@Icons.Material.Filled.Inventory">Inventories</MudNavLink>
+            <MudNavGroup Title="Order" Expanded="false" Icon="@Icons.Material.Filled.Calculate">
+                <MudNavLink Match="NavLinkMatch.Prefix" Href="order" Icon="@Icons.Material.Filled.Calculate">Add Order</MudNavLink>
+                <MudNavLink Match="NavLinkMatch.Prefix" Href="vieworder" Icon="@Icons.Material.Filled.GridView">View Order</MudNavLink>
+            </MudNavGroup>
+            <MudDivider/>
+            <MudNavLink Match="NavLinkMatch.Prefix" Href="logout" Icon="@Icons.Material.Filled.Logout">Log out</MudNavLink>
+        </Authorized>
+    </Microsoft.AspNetCore.Components.Authorization.AuthorizeView>
+</MudNavMenu>
+
+@code
+{
+    private bool _open = false;
+
+    private void ToggleDrawer()
+    {
+        _open = !_open;
+    }
+}

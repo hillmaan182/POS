@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Application.Service;
 using Domain.Model;
+using Microsoft.AspNetCore.Authorization;
+
 namespace POSApi.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class ProductController : ControllerBase
@@ -15,6 +18,7 @@ namespace POSApi.Controllers
             this.genProd = genProd;
         }
 
+        
         [HttpGet]
         public async Task<IActionResult> GetProducts()
         {
@@ -25,11 +29,27 @@ namespace POSApi.Controllers
             }
             catch (Exception)
             {
-
                 return BadRequest();
             }
             
         }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetProductById(long id)
+        {
+            try
+            {
+                var products = productRepository.GetById(id);
+                return Ok(products);
+            }
+            catch (Exception)
+            {
+
+                return BadRequest();
+            }
+
+        }
+
         [HttpPost]
         public async Task<IActionResult> CreateProduct(Product data)
         {
@@ -53,6 +73,29 @@ namespace POSApi.Controllers
                 return BadRequest();
             }
             
+        }
+
+        [HttpPut]
+        public async Task<IActionResult> UpdsateProduct(Product data)
+        {
+            try
+            {
+                if (data == null)
+                {
+                    throw new InvalidOperationException("data is null");
+                }
+                else
+                {
+                    await genProd.UpdateAsync(data);
+                    await genProd.SaveAsync();
+                    return Ok();
+                }
+            }
+            catch (Exception)
+            {
+                return BadRequest();
+            }
+
         }
     }
 }

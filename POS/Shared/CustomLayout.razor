@@ -1,0 +1,17 @@
+﻿@inherits LayoutComponentBase
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudPaper Height="100%" Style="overflow:auto; position:relative;">
+        <MudDrawerContainer Class="mud-height-full">
+            <MudMainContent Style="padding-left:15px;height:100vh" >
+                <MudImage Src="/image/logo.jpg" Elevation="5" Class="rounded-lg ma-4" />
+                @Body
+            </MudMainContent>
+        </MudDrawerContainer>
+    </MudPaper>
+</MudLayout>
+@code {
+}

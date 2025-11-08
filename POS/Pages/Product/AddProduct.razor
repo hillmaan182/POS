@@ -1,15 +1,123 @@
 ﻿@page "/products/add"
-
+@attribute [Authorize]
 @inject HttpClient Http
 @using Microsoft.AspNetCore.Components.Forms
-@using System.Net.Http.Headers
-@using Newtonsoft.Json;
-@using System.Text
+
 @inject IJSRuntime Js
 @inject NavigationManager navManager
 <h1> Add New Product </h1>
 
-<MudCard>
+<MudGrid>
+    <MudItem xs="12" sm="7">
+        <MudPaper Class="pa-4">
+            <MudCardContent>
+                <MudText Align="Align.Center">Product</MudText>
+                <MudForm Model="@obj" @ref="@form">
+                    <MudTextField @bind-Value="obj.ProductName"
+                                  For="@(() => obj.ProductName)"
+                                  Immediate="true"
+                                  Label="Name" />
+
+                    <MudTextField @bind-Value="obj.ProductType"
+                                  For="@(() => obj.ProductType)"
+                                  Immediate="true"
+                                  Label="Type" />
+
+                    <MudTextField @bind-Value="obj.ProductDescription"
+                                  For="@(() => obj.ProductDescription)"
+                                  Immediate="true"
+                                  Label="Description" />
+                    <MudNumericField @bind-Value="obj.ProductPrice" Label="Price" Variant="Variant.Filled" Min="0" />
+
+                    <MudFileUpload T="IBrowserFile" FilesChanged="UploadFiles" Context="fileInput">
+                        <ButtonTemplate>
+                            <MudButton HtmlTag="label" for="@fileInput">Upload Image</MudButton>
+                        </ButtonTemplate>
+                    </MudFileUpload>
+
+                    @if (browserFile != null)
+                    {
+                        <MudList T="string">
+                            <MudListItem Icon="@Icons.Material.Filled.AttachFile" @key="@browserFile">
+                                @browserFile.Name <code>@browserFile.Size bytes</code>
+                            </MudListItem>
+                        </MudList>
+                    }
+                </MudForm>
+            </MudCardContent>
+
+           <MudDivider DividerType="DividerType.Inset" />
+
+            <MudCardActions>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" OnClick="@(async () => await Submit(browserFile))">Add Product</MudButton>
+            </MudCardActions>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="5">
+        <MudPaper Class="pa-4">
+            <MudCardContent>
+                <MudForm Model="@pd" @ref="@form">
+                    <MudText Align="Align.Center">Product Detail</MudText>
+                    <MudTextField @bind-Value="pd.InventoryName"
+                                  For="@(() => pd.InventoryName)"
+                                  Immediate="true"
+                                  Label="Name" />
+
+                    <MudNumericField @bind-Value="pd.Qty" Label="Qty" Variant="Variant.Filled" Min="0" />
+
+                    <MudTextField @bind-Value="pd.QtyDescription"
+                                  For="@(() => pd.QtyDescription)"
+                                  Immediate="true"
+                                  Label="Description" />
+                </MudForm>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" OnClick="@SubmitDetail">Add Product Detail</MudButton>
+            </MudCardActions>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+<h1>
+    Product Detail
+</h1>
+
+@if (objPd == null)
+{
+    <h1>No Data</h1>
+
+}
+else
+{
+    <MudDataGrid T="ProductDetail" Items="@objPd">
+        <Columns>
+            <PropertyColumn Property="x => x.InventoryName" Title="Name" />
+            <PropertyColumn Property="x => x.Qty" />
+            <PropertyColumn Property="x => x.QtyDescription" />
+        </Columns>
+    </MudDataGrid>
+}
+
+
+
+@*<MudStack Row>
+    <MudCard>
+
+
+    </MudCard>
+    <MudCard>
+        <MudCardContent>
+
+
+        </MudCardContent>
+        <MudCardActions>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" OnClick="@(async () => await Submit(browserFile))">Add Product</MudButton>
+        </MudCardActions>
+    </MudCard>
+</MudStack>
+*@
+
+@*<MudCard>
     <MudForm Model="@obj" @ref="@form">
         <MudCardContent>
             <MudTextField @bind-Value="obj.ProductName"
@@ -36,26 +144,21 @@
 
             @if (browserFile != null)
             {
-                
+
                 <MudList T="string">
                     <MudListItem Icon="@Icons.Material.Filled.AttachFile" @key="@browserFile">
                         @browserFile.Name <code>@browserFile.Size bytes</code>
                     </MudListItem>
                 </MudList>
             }
-@*
-            <InputFile OnChange="InputFileChange" />
 
-            <div class="d-flex justify-center">
-                <MudImage Height="200" Width="400" Src="@thumbnail" Alt="Örebro Slott" Elevation="25" Class="rounded-lg" />
-            </div>*@
         </MudCardContent>
 
     </MudForm>
     <MudCardActions>
         <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" OnClick="@(async () => await Submit(browserFile))">Add Product</MudButton>
     </MudCardActions>
-</MudCard>
+</MudCard>*@
 
 
 @if (!string.IsNullOrEmpty(uploadMessage))
@@ -68,7 +171,20 @@
     private string uploadMessage;
     private string thumbnail;
     private Domain.Model.Product obj = new Domain.Model.Product();
+
+    private ProductDetail pd = new ProductDetail();
+
+    private List<ProductDetail> objPd = new List<ProductDetail>();
+
     MudForm form;
+
+    void SubmitDetail()
+    {
+        ProductDetail newPd = new ProductDetail();
+        newPd = pd;
+        objPd.Add(newPd);
+
+    }
 
     private async Task UploadFiles(IBrowserFile img)
     {
@@ -119,7 +235,7 @@
                     if (response.IsSuccessStatusCode)
                     {
                         uploadMessage = "File uploaded successfully!";
-                        await Js.InvokeVoidAsync("Swal.fire", "Hello!", "This is a SweetAlert message.", "success");
+                        await Js.InvokeVoidAsync("Swal.fire", "Message", "Product has successfuly added", "success");
                         navManager.NavigateTo("/products");
                     }
                     else
@@ -155,4 +271,5 @@
             return imgUrl;
         }
     }
+
 }

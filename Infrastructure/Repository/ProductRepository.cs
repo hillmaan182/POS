@@ -1,7 +1,7 @@
 ﻿using Domain.Model;
 using Application.Service;
 using Domain.DataContext;
-
+using Domain.DTO;
 namespace Infrastructure.Repository
 {
     public class ProductRepository : GenericRepository<Product>, IProductRepository
@@ -15,6 +15,10 @@ namespace Infrastructure.Repository
         {
             return db.Product.ToList();
         }
-       
+
+        public Product GetById(long id)
+        {
+            return db.Product.Where(x => x.Id == id).FirstOrDefault();
+        }
     }
 }

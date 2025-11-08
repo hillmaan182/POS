@@ -1,0 +1,16 @@
+﻿@inject NavigationManager nav
+@inject Application.IService.IAuthenticationService AuthenticationService
+@*@inject IService.IAuthenticationService AuthenticationService*@
+@page "/logout"
+
+<MudProgressCircular Color="Color.Default" Indeterminate="true" />
+
+@code {
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthenticationService.Logout();
+        await Task.Delay(3000);
+        nav.NavigateTo("/login");
+     }
+}

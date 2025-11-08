@@ -1,42 +1,50 @@
 ﻿@inherits LayoutComponentBase
+@inject AppState AppState
+@using Microsoft.AspNetCore.Components.Authorization;
+
 @* Required *@
-<MudThemeProvider  />
-<MudPopoverProvider />
+<MudThemeProvider />
+@*<MudPopoverProvider />*@
 <MudDialogProvider />
 <MudSnackbarProvider />
 
 <MudLayout>
-    <MudAppBar>
-        My Application
-    </MudAppBar>
-    <MudDrawer @bind-Open="@_drawerOpen">
-        <NavMenu />
-    </MudDrawer>
-    <MudMainContent>
-        @Body
-    </MudMainContent>
+    @*  <MudAppBar>
+    My Application
+    </MudAppBar>*@
+
+    <MudPaper Height="100%" Style="overflow:auto; position:relative;">
+        <MudDrawerContainer Class="mud-height-full">
+            <MudDrawer @bind-Open="@_drawerOpen" Fixed="true" Elevation="1"
+                       Variant="@DrawerVariant.Mini" OpenMiniOnHover="true" Breakpoint="Breakpoint.None" Style="padding-top:50px">
+                <MudNav />
+            </MudDrawer>
+
+            <MudMainContent Style="padding-left:15px;height:100vh" >
+                @Body
+            </MudMainContent>
+
+        </MudDrawerContainer>
+    </MudPaper>
+
 </MudLayout>
 @code {
     private bool _isDarkMode = true;
     bool _drawerOpen = true;
 
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthState { get; set; }
+    
+    protected override void OnInitialized()
+    {
+        AppState.openDrawer = true;
+    }
+
     void DrawerToggle()
     {
         _drawerOpen = !_drawerOpen;
     }
+
+   
 }
-@*<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>*@

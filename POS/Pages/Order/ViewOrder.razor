@@ -1,0 +1,110 @@
+﻿@page "/vieworder"
+@attribute [Authorize]
+@inject HttpClient Http
+@inject Application.ServiceHelper.IStringHelper help;
+@inject IJSRuntime Js
+<h3>Order List</h3>
+<MudDivider />
+
+<MudGrid>
+    <MudItem xs="3">
+        <MudDatePicker Label="Start Date" @bind-date="_startDate" DateFormat="yyyy-MM-dd" />
+    </MudItem>
+    <MudItem xs="3">
+        <MudDatePicker Label="End Date" @bind-date="_endDate" DateFormat="yyyy-MM-dd" />
+    </MudItem>
+    <MudItem xs="6"></MudItem>
+    <MudItem xs="3">
+        <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Search" Color="Color.Info" OnClick="@(async () => await Search())">Search</MudButton>
+    </MudItem>
+    <MudItem xs="3">
+        <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.SaveAs" Color="Color.Info" OnClick="@(async () => await ExportToExcel())">Save To Excel</MudButton>
+    </MudItem>
+</MudGrid>
+
+<MudDataGrid Items="@orderDTOs">
+    <Columns>
+        <HierarchyColumn T="Domain.DTO.OrderDTO" />
+         <PropertyColumn Property="x => x.ordercode" Title="Order Code" />
+        <PropertyColumn Property="x => x.customername" Title="Customer" />
+        <PropertyColumn Property="x => x.orderdate.Value.Date" Title="Date" />
+        <PropertyColumn Property="x => help.SetCurrency(x.totalprice.Value)" Title="Total" />
+    </Columns>
+    <ChildRowContent>
+        @{
+            var cOrderDet = context;
+            <div class="pa-4">
+                <MudTable Items="@cOrderDet.Item.OrderDetail" Hover="true" Dense="true">
+                    <HeaderContent>
+                        <MudTh>Product</MudTh>
+                        <MudTh>Qty</MudTh>
+                        <MudTh>Price</MudTh>
+                    </HeaderContent>
+                    <RowTemplate Context="objContext">
+                        <MudTd>@objContext.Product.ProductName</MudTd>
+                        <MudTd>@objContext.qty</MudTd>
+                        <MudTd>@help.SetCurrency(objContext.Product.ProductPrice.Value)</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </div>
+        }
+    </ChildRowContent>
+</MudDataGrid>
+
+@code {
+
+    private List<Domain.Model.Order> orders;
+    private List<Domain.DTO.OrderDTO> orderDTOs;
+    private Domain.Model.Order _selectedOrder;
+    private List<Domain.Model.OrderDetail> orderDetails;
+    private List<Domain.Model.OrderDetail> ord;
+    private List<Domain.DTO.OrderDetailGetDTO> ordDto;
+    private int totalPrice;
+    private int totalPriceX;
+
+    private MudDataGrid<Domain.DTO.OrderDTO> _dataGrid = null!;
+
+    private DateTime? _startDate, _endDate = DateTime.Today;
+
+    protected override async Task OnInitializedAsync()
+    {
+        orders = await Http.GetFromJsonAsync<List<Domain.Model.Order>>("api/Order");
+        orderDTOs = await Http.GetFromJsonAsync<List<Domain.DTO.OrderDTO>>("api/Order/DTO");
+    }
+
+    private async Task OnOrdersRowClick(TableRowClickEventArgs<Domain.Model.Order> args)
+    {
+        try
+        {
+            totalPrice = 0;
+            _selectedOrder = args.Item;
+            long id = args.Item.id;
+            ordDto = await Http.GetFromJsonAsync<List<Domain.DTO.OrderDetailGetDTO>>("api/OrderDetail/DTO/" + id);
+            foreach (var item in ordDto.ToList())
+            {
+                totalPrice += (item.Product.ProductPrice.Value * item.qty.Value);
+            }
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    private async Task Search()
+    {
+        string start, end = "";
+        start = _startDate.Value.Date.ToString("yyyy-MM-dd");
+        end = _endDate.Value.Date.ToString("yyyy-MM-dd");
+        orderDTOs = await Http.GetFromJsonAsync<List<Domain.DTO.OrderDTO>>("api/Order/DTO/" + start + "/" + end);
+    }
+
+    private async Task ExportToExcel()
+    {
+        var response = await Http.GetAsync("api/Order/export-excel");
+        response.EnsureSuccessStatusCode();
+        var fileBytes = await response.Content.ReadAsByteArrayAsync();
+        var base64 = Convert.ToBase64String(fileBytes);
+        await Js.InvokeVoidAsync("saveAsFile", "Order-Nov-2025.xlsx", base64);
+    }
+}

@@ -1,0 +1,484 @@
+﻿@page "/order"
+
+@attribute [Authorize]
+
+@using IronBarCode
+@using Newtonsoft.Json.Linq
+@using QRCoder;
+@using System.Text.Json
+@using static QRCoder.PayloadGenerator
+
+@inject AppState AppState
+@inject HttpClient Http
+@inject IJSRuntime Js
+@inject Application.ServiceHelper.IStringHelper help
+@using Domain.DTO
+<h3>Order</h3>
+
+@*Page Section*@
+@if (products == null)
+{
+    <p><em>There is no product...</em></p>
+}
+else
+{
+    <MudGrid>
+        <MudItem xs="9">
+            <MudTextField @bind-Value="CustomerName"
+                      For="@(() => CustomerName)"
+                      Immediate="true"
+                      Label="Customer Name" Variant="Variant.Outlined" />
+        </MudItem>
+        <MudItem xs="3" Style="justify-content:center">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => ToggleDrawer())">Check Order</MudButton>
+        </MudItem>
+    </MudGrid>
+
+
+    @*Product Section*@
+    <MudGrid Spacing=3 Justify="Justify.FlexStart">
+        @foreach (var item in products)
+        {
+            <MudItem xs="3">
+                <MudCard Elevation="5">
+                    <MudCardMedia Image="@item.ProductImage" Height="200" Width="100" />
+                    <MudCardContent>
+                        <MudText Typo="Typo.h5">@item.ProductName</MudText>
+                        <MudText Typo="Typo.h6">@help.SetCurrency(item.ProductPrice.Value) </MudText>
+
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => ToggleDrawerAddOrder(item.Id))">Add</MudButton>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        }
+    </MudGrid>
+}
+
+<MudDrawer @bind-Open="@_openAddOrder" Overlay="false" Elevation="1" Variant="@DrawerVariant.Temporary" Anchor="Anchor.Start" Height="100vh" Width="120vh">
+    <MudDrawerHeader>
+        <MudText Typo="Typo.h6">Orders</MudText>
+        <MudDivider />
+    </MudDrawerHeader>
+    <MudDrawerContainer>
+        <MudGrid Spacing=3 Justify="Justify.Center">
+            <MudItem xs="4">
+                <MudCard>
+                    <MudCardMedia Image="@perProduct.ProductImage" Height="200" Width="150" />
+                    <MudCardContent>
+                        <MudText Typo="Typo.h5">@perProduct.ProductName</MudText>
+                        <MudText Typo="Typo.h6">@help.SetCurrency(perProduct.ProductPrice.Value) </MudText>
+                        <MudNumericField Id="@perProduct.Id" @bind-Value="@qty"
+                                         Label="Qty"
+                                         Variant="Variant.Text"
+                                         Min="1"/>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => AddOrder(perProduct.Id))">Add Order</MudButton>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        </MudGrid>
+    </MudDrawerContainer>
+</MudDrawer>
+
+@*Order Drawer Section*@
+<MudDrawer @bind-Open="@_open" Overlay="false" Elevation="1" Variant="@DrawerVariant.Temporary" Anchor="Anchor.Start" Width="120vh" Height="100vh">
+    <MudDrawerContainer>
+        <MudText Typo="Typo.h6">Order Code : @orderCode</MudText>
+        <MudDivider />
+        <MudStack>
+            @* @{
+            foreach (var obj in tssDTO)
+            {
+            <MudPaper Square="true" Class="d-flex justify-space-around">
+            <MudText Typo="Typo.h6" Align="Align.Center">
+            @obj.Product.ProductName - @obj.Product.ProductPrice
+            </MudText>
+            <MudDivider Vertical="true" FlexItem="true" />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => RemoveOrder(obj.OrderId))">-</MudButton>
+            </MudPaper>
+            }
+            }*@
+            <MudText>Customer : @CustomerName</MudText>
+            <MudDataGrid Items="@tssDTO">
+                <Columns>
+                    <PropertyColumn Property="x => x.Product.ProductName" />
+                    <PropertyColumn Property="x => x.Qty" />
+                    <PropertyColumn Property="x => x.TotalQtyPrice" />
+                    <TemplateColumn CellClass="d-flex justify-end">
+                        <CellTemplate>
+                            @{
+                                var item = context.Item; // Access the current row's data
+                            }
+                            <MudStack Row>
+                                <MudButton Size="@Size.Small" Variant="@Variant.Filled" Color="@Color.Primary" OnClick="@(() => RemoveOrder(item.OrderId))">-</MudButton>
+                            </MudStack>
+                        </CellTemplate>
+                    </TemplateColumn>
+                </Columns>
+            </MudDataGrid>
+
+
+        </MudStack>
+        <MudDivider />
+    </MudDrawerContainer>
+    <MudDrawerContainer>
+        <MudText Typo="Typo.h6" Align="Align.Right">Total : @total</MudText>
+    </MudDrawerContainer>
+    <MudDrawerContainer>
+        <MudItem Class="d-flex align-center justify-center mud-width-full">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => SubmitOrder())">Order</MudButton>
+        </MudItem>
+    </MudDrawerContainer>
+</MudDrawer>
+
+<br>
+
+@*Drawer QR Code*@
+<MudDrawer @bind-Open="@_openQR" Width="100%" Height="450px" Anchor="Anchor.Top" Elevation="1" Variant="@DrawerVariant.Temporary">
+    <MudDrawerHeader>
+        <MudText Typo="Typo.h6">QR Code</MudText>
+    </MudDrawerHeader>
+    <MudDrawerContainer>
+        <div class="d-flex justify-center">
+            <MudImage ObjectFit="ObjectFit.Fill" ObjectPosition="ObjectPosition.Center" Height="400" Width="400" Src="@imageQR" Elevation="25" Class="rounded-lg" />
+        </div>
+    </MudDrawerContainer>
+</MudDrawer>
+
+
+@code {
+    private bool _open;
+    private bool _openAddOrder;
+    private bool _openQR;
+
+    private Domain.Model.Product product;
+
+    private TransactionDetail ts = new TransactionDetail();
+    List<TransactionDetail> tss = new List<TransactionDetail>();
+
+    //Temp Data for Order Drawer
+    private TransactionDetailDTO tsDTO;
+    List<TransactionDetailDTO> tssDTO = new List<TransactionDetailDTO>();
+
+    private string CustomerName;
+
+    int counter = 0;
+    public int qty { get; set; }
+    private int total = 0;
+
+    //Hitpay API
+    const string urihitpay = "https://api.sandbox.hit-pay.com/v1/payment-requests";
+    const string apikey = "test_373e37c28311f30c28a5b9dc1afe0f0850dd4a108271fb2061fbb12316d51a67";
+    private readonly QRCodeGenerator qrGenerator = new();
+    private string imageQR;
+
+    private List<Domain.Model.Product> products;
+
+    private Domain.Model.Product perProduct;
+    private string orderCode;
+    private Domain.Model.MasterRef masterRef;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            products = await Http.GetFromJsonAsync<List<Domain.Model.Product>>("api/Product");
+        }
+        catch (Exception ex)
+        {
+
+            Console.WriteLine(ex.ToString);
+        }
+
+    }
+
+    private async void ToggleDrawerAddOrder(long id)
+    {
+        perProduct = await Http.GetFromJsonAsync<Domain.Model.Product>("api/Product/" + id);
+        _openAddOrder = true;
+        StateHasChanged();
+    }
+
+    private async Task AddOrder(long id)
+    {
+        try
+        {
+
+            //orderCode = help.GetRef("OrderCode");
+            //orderCode = await Http.GetFromJsonAsync<string>("api/Ref/" + "OrderCode");
+            //HttpResponseMessage response = await Http.GetAsync("api/Ref/OrderCode");
+            //if (response.IsSuccessStatusCode)
+            //{
+            //    orderCode = await response.Content.ReadAsStringAsync();
+            //}
+
+            try
+            {
+                masterRef = await Http.GetFromJsonAsync<Domain.Model.MasterRef>("api/Ref/" + "OrderCode");
+                orderCode = masterRef.RefLastValue;
+            }
+            catch (Exception ex)
+            {
+
+                Console.WriteLine(ex.ToString());
+            }
+
+            counter += 1;
+            tsDTO = new TransactionDetailDTO();
+            product = await Http.GetFromJsonAsync<Domain.Model.Product>("api/Product/" + id);
+            tsDTO.Product = product;
+            tsDTO.Qty = qty;
+            tsDTO.TotalQtyPrice = product.ProductPrice.Value * qty;
+            tsDTO.ProductId = product.Id;
+            tsDTO.OrderId = counter;
+            tssDTO.Add(tsDTO);
+            //total += tsDTO.Product.ProductPrice.Value;
+            total += tsDTO.TotalQtyPrice;
+
+            qty = 1;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await Js.InvokeVoidAsync("Swal.fire", "Error", ex.ToString(), "Failed");
+        }
+        _openAddOrder = false;
+        StateHasChanged();
+        await Js.InvokeVoidAsync("Swal.fire", "Success!", "Order has been added", "success");
+    }
+
+    private async Task RemoveOrder(long id)
+    {
+        var order = tssDTO.Where(x => x.OrderId == id).FirstOrDefault();
+        total -= order.TotalQtyPrice;
+        tssDTO.Remove(order);
+
+        await Js.InvokeVoidAsync("Swal.fire", "Success!", "Order has been removed", "success");
+    }
+
+    //public async Task<string> GetApiResponse()
+    //{
+    //    try
+    //    {
+    //        using (var client = new HttpClient())
+    //        {
+    //            HitpayPayload hload = new HitpayPayload();
+    //            string[] pay = { "paynow_online" };
+    //            hload.amount = total;
+    //            hload.currency = "SGD";
+    //            hload.payment_methods = pay;
+    //            hload.generate_qr = true;
+
+    //            string url = "https://api.sandbox.hit-pay.com/v1/payment-requests";
+    //            string apiKey = "test_373e37c28311f30c28a5b9dc1afe0f0850dd4a108271fb2061fbb12316d51a67";
+    //            //string resp = await PostAsync(hload , url,apiKey );
+
+    //            //var resp = await Http.PostAsync("api/Hitpay", httpContent);
+
+    //            string resp = await http.PostAsync(hload, url, apiKey);
+
+    //            return resp;
+
+    //            //string jsonString = JsonConvert.SerializeObject(hload);
+    //            //var httpContent = new StringContent(jsonString, Encoding.UTF8, "application/json");
+
+    //            //var request = new HttpRequestMessage(HttpMethod.Post, "https://api.sandbox.hit-pay.com/v1/payment-requests");
+    //            //request.Headers.Add("X-BUSINESS-API-KEY", "test_373e37c28311f30c28a5b9dc1afe0f0850dd4a108271fb2061fbb12316d51a67");
+    //            //request.Headers.Add("X-Requested-With", "XMLHttpRequest");
+    //            //request.Content = httpContent;
+
+    //            //HttpResponseMessage response = await client.SendAsync(request);
+    //            //response.EnsureSuccessStatusCode();
+    //            //string jsonResponse = await response.Content.ReadAsStringAsync();
+    //            //return jsonResponse;
+    //        }
+    //    }
+    //    catch (Exception ex)
+    //    {
+
+    //        return null;
+    //    }
+    //}
+
+    private async Task<string> PostAsync(dynamic model, string uri, string apiKey)
+    {
+        using (var client = new HttpClient())
+        {
+            string jsonString = JsonConvert.SerializeObject(model);
+            var httpContent = new StringContent(jsonString, Encoding.UTF8, "application/json");
+
+            var request = new HttpRequestMessage(HttpMethod.Post, uri);
+            request.Headers.Add("X-BUSINESS-API-KEY", apiKey);
+            request.Headers.Add("X-Requested-With", "XMLHttpRequest");
+            request.Content = httpContent;
+
+            HttpResponseMessage response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            string jsonResponse = await response.Content.ReadAsStringAsync();
+
+            return jsonResponse;
+
+
+        }
+    }
+
+    private async Task SubmitOrder()
+    {
+        try
+        {
+            //Update Order Code
+
+            bool flag = false;
+
+            Domain.DTO.OrderTempDTO dto1 = new Domain.DTO.OrderTempDTO();
+            dto1.customername = CustomerName;
+            dto1.ordercode = orderCode;
+            dto1.orderdate = DateTime.Now.Date;
+            dto1.totalprice = total;
+            dto1.OrderDetail = tssDTO.Select(x => new Domain.DTO.OrderDetailTempDTO
+                {
+                    productid = x.ProductId,
+                    qty = x.Qty
+                }).ToList();
+
+
+            string jsonStringMaster = JsonConvert.SerializeObject(dto1);
+            var httpContentMaster = new StringContent(jsonStringMaster, Encoding.UTF8, "application/json");
+            var responseMaster = await Http.PostAsync("api/Order/DTO", httpContentMaster);
+
+            //Domain.Model.Order order = new Domain.Model.Order();
+            //order.customername = CustomerName;
+            //order.ordercode = orderCode;
+            //order.orderdate = DateTime.Now.Date;
+            //order.totalprice = total;
+
+            //string jsonStringMaster = JsonConvert.SerializeObject(order);
+            //var httpContentMaster = new StringContent(jsonStringMaster, Encoding.UTF8, "application/json");
+            //var responseMaster = await Http.PostAsync("api/Order", httpContentMaster);
+
+            //var locationHeader = responseMaster.Headers.Location;
+            //if (locationHeader != null)
+            //{
+            //    // Now you have the URI of the newly created resource
+            //    string resourceUri = locationHeader.ToString();
+            //    // You could then make a GET request to resourceUri if needed
+            //}
+
+            //// Deserialize the response body if the resource is returned
+            //var responseBody = await responseMaster.Content.ReadAsStringAsync();
+            //var createdResource = JsonConvert.DeserializeObject<Domain.Model.Order>(responseBody);
+            //////return createdResource;
+
+            ////List<Domain.Model.OrderDetail> ordDetail = new List<Domain.Model.OrderDetail>();
+            //foreach (var item in tssDTO.ToList())
+            //{
+
+            //    Domain.Model.OrderDetail ordDetails = new Domain.Model.OrderDetail();
+            //    //ordDetails.Product = item.Product;
+            //    ordDetails.productid = item.ProductId;
+            //    //ordDetails.order = createdResource;
+            //    ordDetails.orderid = createdResource.id;
+            //    ordDetails.qty = item.Qty;
+
+            //    var jsonString = JsonConvert.SerializeObject(ordDetails);
+            //    var httpContent = new StringContent(jsonString, Encoding.UTF8, "application/json");
+            //    var response = await Http.PostAsync("api/OrderDetail", httpContent);
+            //}
+
+            var jsonStringRef = JsonConvert.SerializeObject(masterRef);
+            var httpContentRef = new StringContent(jsonStringRef, Encoding.UTF8, "application/json");
+            var responseRef = await Http.PutAsync("api/Ref", httpContentRef);
+
+            _open = false;
+            CustomerName = "";
+            orderCode = "";
+            tssDTO.Clear();
+            StateHasChanged();
+
+
+            ////var ord = await Http.GetFromJsonAsync<Domain.Model.Order>("api/Order/" + orderCode);
+            ////get by ordercode
+
+            //foreach (var item in tssDTO.ToList())
+            //{
+            //    Domain.Model.OrderDetail ordDetail = new Domain.Model.OrderDetail();
+            //    ordDetail.productid = item.ProductId;
+            //    ordDetail.qty = item.Qty;
+            //    ordDetail.orderid = createdResource.id;
+            //    ordDetail.order = createdResource;
+            //    ordDetail.Product = item.Product;
+            //    jsonString = JsonConvert.SerializeObject(ordDetail);
+            //    var httpContent = new StringContent(jsonString, Encoding.UTF8, "application/json");
+            //    var response = await Http.PostAsync("api/OrderDetail", httpContent);
+
+            //    if (response.IsSuccessStatusCode)
+            //    {
+            //        flag = true;
+            //        //await Js.InvokeVoidAsync("Swal.fire", "Hello!", "This is a SweetAlert message.", "success");
+            //    }
+            //}
+
+            //if (flag == true)
+            //{
+            //    await Js.InvokeVoidAsync("Swal.fire", "Success!", "Order has been succesfully created.", "success");
+            //}
+
+            //Order Id -> TotalPriceOrder , Date , Customer , OrderCode
+            //Order Detail -> Product(s) Id , Qty , PricePerQty
+
+            //QR CODE
+            //string jsonResponse = await GetApiResponse();
+            //if (jsonResponse == "" || jsonResponse == null)
+            //{
+            //    throw new InvalidOperationException();
+            //}
+            //string qrURL = "";
+
+            //JObject jsonObject = JObject.Parse(jsonResponse);
+            //qrURL = (string)jsonObject["qr_code_data"]["qr_code"];
+
+            //var qrCodeData = qrGenerator.CreateQrCode(new Url(qrURL));
+            //imageQR = GeneratePng(qrCodeData);
+            //OpenQRCode();
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(ex.ToString());
+            //logger
+        }
+
+        await Js.InvokeVoidAsync("Swal.fire", "Success!", "Order has been succesfully created.", "success");
+    }
+    //Generate QR Code PNG
+    private static string GeneratePng(QRCodeData data)
+    {
+        using var qrCode = new PngByteQRCode(data);
+        var qrCodeImage = qrCode.GetGraphic(20);
+        return $"data:image/png;base64,{Convert.ToBase64String(qrCodeImage)}";
+    }
+
+    private void ToggleDrawer()
+    {
+
+        _open = !_open;
+    }
+
+    //Open QR Code Drawer after Submit Order --> Hitpay API
+    private void OpenQRCode()
+    {
+        _openQR = true;
+    }
+
+    public async Task<string> setOrdeR()
+    {
+        HitpayPayload hload = new HitpayPayload();
+        string jsonString = JsonConvert.SerializeObject(hload);
+        var httpContent = new StringContent(jsonString, Encoding.UTF8, "application/json");
+
+        HttpClient client = new HttpClient();
+        client.BaseAddress = new Uri(urihitpay);
+        var request = new HttpRequestMessage(HttpMethod.Post, urihitpay);
+        request.Headers.Add("X-BUSINESS-API-KEY", apikey);
+        var response = client.PostAsync(urihitpay, httpContent);
+        return await response.Result.Content.ReadAsStringAsync();
+    }
+}

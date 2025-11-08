@@ -1,19 +1,42 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@*<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">POS</a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
             <span class="navbar-toggler-icon"></span>
         </button>
     </div>
-</div>
+</div>*@
 
-<MudPaper Width="250px" Elevation="0" Class="py-1">
+<MudPaper Height="200px" Style="overflow:hidden; position:relative;">
+    <MudDrawerContainer Class="mud-height-full">
+        <MudDrawer @bind-Open="@_open" Fixed="false" Elevation="1" Variant="@DrawerVariant.Mini" OpenMiniOnHover="true" Breakpoint="Breakpoint.None">
+            <MudNavMenu>
+                <MudNavLink Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Store">Store</MudNavLink>
+                <MudNavLink Match="NavLinkMatch.Prefix" Href="products" Icon="@Icons.Material.Filled.Coffee">Products</MudNavLink>
+                <MudNavLink Match="NavLinkMatch.Prefix" Href="order" Icon="@Icons.Material.Filled.Calculate">Order</MudNavLink>
+                <MudNavLink Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Group">Community</MudNavLink>
+            </MudNavMenu>
+        </MudDrawer>
+       
+    </MudDrawerContainer>
+</MudPaper>
+@code
+{ 
+    private bool _open = false;
+
+    private void ToggleDrawer()
+    {
+        _open = !_open;
+    } 
+}
+
+@*<MudPaper Width="250px" Elevation="0" Class="py-1">
     <MudNavMenu Margin="Margin.Normal" Color="Color.Error">
         <MudNavLink Href="/dashboard" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
         <MudNavLink Match="NavLinkMatch.Prefix" Href="products" Icon="@Icons.Material.Filled.Dataset">Products</MudNavLink>
         <MudNavLink Href="/thelab" Icon="@Icons.Material.Filled.Science">The Lab</MudNavLink>
     </MudNavMenu>
-</MudPaper>
+</MudPaper>*@
 @*<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
     <nav class="flex-column">
         <div class="nav-item px-3">
@@ -40,12 +63,12 @@
 </div>*@
 
 @code {
-    private bool collapseNavMenu = true;
+    //private bool collapseNavMenu = true;
 
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+    //private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
 
-    private void ToggleNavMenu()
-    {
-        collapseNavMenu = !collapseNavMenu;
-    }
+    //private void ToggleNavMenu()
+    //{
+    //    collapseNavMenu = !collapseNavMenu;
+    //}
 }

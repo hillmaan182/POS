@@ -1,0 +1,90 @@
+﻿@page "/registeradmin"
+
+@using Domain.JwtAuthModel
+@inject NavigationManager nav
+@inject IJSRuntime Js
+
+@inject HttpClient http
+
+<h3>RegisterUser</h3>
+
+@if (ShowRegistrationErrors)
+{
+    <div class="alert alert-danger" role="alert">
+        <p>@Errors</p>
+    </div>
+
+}
+
+<EditForm Model="userReg" OnValidSubmit="RegisterUserModel" class="card card-body bg-light mt-5">
+    <DataAnnotationsValidator />
+    <div class="form-group row">
+        <label for="email" class="col-md-2 col-form-label">Email:</label>
+        <div class="col-md-10">
+            <InputText id="email" class="form-control" @bind-Value="userReg.Email" />
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="email" class="col-md-2 col-form-label">Username:</label>
+        <div class="col-md-10">
+            <InputText id="email" class="form-control" @bind-Value="userReg.Username" />
+            <ValidationMessage For="@(() => userReg.Username)" />
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="password" class="col-md-2 col-form-label">Password:</label>
+        <div class="col-md-10">
+            <InputText type="password" id="password" class="form-control" @bind-Value="userReg.Password" />
+            <ValidationMessage For="@(() => userReg.Password)" />
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12 text-right">
+            <button type="submit" class="btn btn-success">Register</button>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    public bool ShowRegistrationErrors { get; set; }
+    public string Errors;
+    private RegisterModel userReg = new RegisterModel();
+    private EmailModel email = new EmailModel();
+
+    public async Task RegisterUserModel()
+    {
+        //ShowRegistrationErrors = false;
+       
+        string jsonString = JsonConvert.SerializeObject(userReg);
+        var httpContent = new StringContent(jsonString, Encoding.UTF8, "application/json");
+
+        var response = await http.PostAsync("api/Authenticate/register", httpContent);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var responseError = await response.Content.ReadFromJsonAsync<Response>();
+            Errors = responseError.Message;
+            ShowRegistrationErrors = true;
+        }
+        else
+        {
+            email.ToEmail = userReg.Email;
+            email.MailSubject = "Activate your Halo POS Account";
+            email.Link = http.BaseAddress.ToString() + "api/Authenticate/activateuser/" + userReg.Username.ToString();
+            var jsonStringEmail = JsonConvert.SerializeObject(email);
+            var httpContentEmail = new StringContent(jsonStringEmail, Encoding.UTF8, "application/json");
+
+            var responseEmail = await http.PostAsync("api/Email/send-email", httpContentEmail);
+            if (response.IsSuccessStatusCode)
+            {
+                await Js.InvokeVoidAsync("Swal.fire", "Success!", "Your account has been created", "success");
+                Task.Delay(1000);
+                nav.NavigateTo("/login");
+            }
+
+        }
+    }
+
+
+
+}

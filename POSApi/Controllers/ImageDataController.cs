@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Application.Service;
 using Domain.Model;
+
 namespace POSApi.Controllers
 {
+    
     [ApiController]
     [Route("api/[controller]")]
     public class ImageDataController : ControllerBase

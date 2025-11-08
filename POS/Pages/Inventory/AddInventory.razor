@@ -1,0 +1,65 @@
+﻿@page "/inventory/add"
+@attribute [Authorize]
+@inject NavigationManager navManager
+@inject HttpClient Http
+@inject IJSRuntime Js
+<h3 style="padding-top:50px;padding-bottom:25px">Add Inventory</h3>
+
+
+
+<MudCard>
+    <MudForm Model="@obj" @ref="@form">
+        <MudCardContent>
+            <MudTextField @bind-Value="obj.InventoryName"
+                          For="@(() => obj.InventoryName)"
+                          Immediate="true"
+                          Label="Name" />
+
+            <MudNumericField @bind-Value="obj.Qty" Label="Price" Variant="Variant.Filled" Min="0" />
+
+            <MudTextField @bind-Value="obj.QtyDescription"
+                          For="@(() => obj.QtyDescription)"
+                          Immediate="true"
+                          Label="Description Qty" />
+                          
+            <MudTextField @bind-Value="obj.Price"
+                          For="@(() => obj.Price)"
+                          Immediate="true"
+                          Label="Price" />
+
+        </MudCardContent>
+
+    </MudForm>
+    <MudCardActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" OnClick="@(async () => await Submit())">Add Inventory</MudButton>
+    </MudCardActions>
+</MudCard>
+
+@code {
+    MudForm form;
+    private Domain.Model.Inventory obj = new Domain.Model.Inventory();
+    private async Task Submit()
+    {
+        await form.Validate();
+        try
+        {
+            string jsonString = JsonConvert.SerializeObject(obj);
+            var httpContent = new StringContent(jsonString, Encoding.UTF8, "application/json");
+
+            var response = await Http.PostAsync("api/Inventory", httpContent);
+
+            if (response.IsSuccessStatusCode)
+            {
+                await Js.InvokeVoidAsync("Swal.fire", "Hello!", "This is a SweetAlert message.", "success");
+                navManager.NavigateTo("/inventory");
+            }else
+            {
+                await Js.InvokeVoidAsync("Swal.fire", "Error", "Error", "error");
+            }
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+}

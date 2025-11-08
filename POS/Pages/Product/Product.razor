@@ -1,0 +1,161 @@
+﻿@page "/products"
+@attribute [Authorize]
+
+@inject IJSRuntime Js
+@inject Application.ServiceHelper.IStringHelper stringHelp
+@inject HttpClient Http
+
+@using Domain.Model
+<h3>Product List</h3>
+<MudButton Href="/products/add" Variant="Variant.Outlined">Add Product</MudButton>
+@if (products == null)
+{
+  <MudText Color="Color.Default"> No Data </MudText>
+}
+else
+{
+    if (isLoading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+    }
+    else
+    {
+
+        <MudGrid Spacing=3 Justify="Justify.FlexStart">
+            @foreach (var item in products)
+            {
+                <MudItem xs="3">
+                    <MudCard>
+                        <MudCardMedia Image="@item.ProductImage" Height="200" Width="100" />
+                        <MudCardContent>
+                            <MudText Typo="Typo.h5">@item.ProductName</MudText>
+                            <MudText Typo="Typo.h6">@item.ProductDescription</MudText>
+                            <MudText Typo="Typo.h6">@stringHelp.SetCurrency(item.ProductPrice.Value)</MudText>
+                        </MudCardContent>
+                        <MudCardActions>
+                            <MudButton Variant="Variant.Filled" EndIcon="@Icons.Material.Filled.Update" Color="Color.Primary"
+                           OnClick="@(() => ToggleUpdateProductDrawer(item.Id))">Update</MudButton>
+                            <MudButton Variant="Variant.Filled" EndIcon="@Icons.Material.Filled.Update" Color="Color.Primary"
+                           OnClick="@(() => DeleteProduct(item.Id))">Update</MudButton>
+                        </MudCardActions>
+                    </MudCard>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+}
+
+<MudMessageBox @ref="_mudMessageBox" Title="Warning" CancelText="Cancel">
+    <MessageContent>
+        Deleting can <b><i>not</i></b> be undone!
+    </MessageContent>
+    <YesButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Filled.DeleteForever">Delete!</MudButton>
+    </YesButton>
+</MudMessageBox>
+
+<MudDrawer @bind-Open="@_openUpdateProduct" Overlay="false" Elevation="1" Variant="@DrawerVariant.Temporary" Anchor="Anchor.Start" Height="100vh" Width="120vh">
+    <MudDrawerHeader>
+        <MudText Typo="Typo.h6" Style="align-content:center">Update Product</MudText>
+        <MudDivider />
+    </MudDrawerHeader>
+    <MudDrawerContainer>
+        <MudGrid Spacing=3 Justify="Justify.Center">
+            <MudItem xs="4">
+                <MudCard Elevation="5">
+                    <MudCardMedia Image="@perProduct.ProductImage" Height="200" Width="150" />
+                    <MudCardContent>
+                        <MudTextField @bind-Value="perProduct.ProductName"
+                                      For="@(() => perProduct.ProductName)"
+                                      Immediate="true"
+                                      Label="Name" />
+
+                        <MudTextField @bind-Value="perProduct.ProductType"
+                                      For="@(() => perProduct.ProductType)"
+                                      Immediate="true"
+                                      Label="Type" />
+
+                        <MudTextField @bind-Value="perProduct.ProductDescription"
+                                      For="@(() => perProduct.ProductDescription)"
+                                      Immediate="true"
+                                      Label="Description" />
+                        <MudNumericField @bind-Value="perProduct.ProductPrice"
+                                         For="@(() => perProduct.ProductPrice)"
+                                         Label="Price" Variant="Variant.Filled" Min="0" />
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => UpdateProduct(perProduct))">Update</MudButton>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        </MudGrid>
+    </MudDrawerContainer>
+</MudDrawer>
+
+@code {
+    private List<Domain.Model.Product> products;
+    private Domain.Model.Product perProduct;
+    private bool _openUpdateProduct;
+    private bool isLoading = false;
+    private MudMessageBox _mudMessageBox;
+
+    protected override async Task OnInitializedAsync()
+    {
+        products = await Http.GetFromJsonAsync<List<Domain.Model.Product>>("api/Product");
+    }
+
+    private async void ToggleUpdateProductDrawer(long id)
+    {
+        perProduct = await Http.GetFromJsonAsync<Domain.Model.Product>("api/Product/" + id);
+        _openUpdateProduct = true;
+        StateHasChanged();
+    }
+
+    private async void DeleteProduct(long id)
+    {
+        //var response = await Http.DeleteAsync("api/Product/" + id);
+        bool? result = await _mudMessageBox.Show();
+
+        StateHasChanged();
+        //state = result == null ? "Canceled" : "Deleted!";
+        if (result == null)
+        {
+            //delete data
+        }
+        else
+        {
+            var response = await Http.DeleteAsync("api/Product/" + id);
+            if (response.IsSuccessStatusCode)
+            {
+                products = await Http.GetFromJsonAsync<List<Domain.Model.Product>>("api/Product");
+                isLoading = true;
+                _openUpdateProduct = false;
+                StateHasChanged();
+                await Js.InvokeVoidAsync("Swal.fire", "Message", "Product has been deleted", "success");
+                await Task.Delay(2000);
+                isLoading = false;
+                StateHasChanged();
+
+            }
+        }
+    }
+
+    private async void UpdateProduct(Domain.Model.Product data)
+    {
+        string jsonString = JsonConvert.SerializeObject(data);
+        var httpContent = new StringContent(jsonString, Encoding.UTF8, "application/json");
+
+        var response = await Http.PutAsync("api/Product", httpContent);
+
+        if (response.IsSuccessStatusCode)
+        {
+            products = await Http.GetFromJsonAsync<List<Domain.Model.Product>>("api/Product");
+            isLoading = true;
+            _openUpdateProduct = false;
+            StateHasChanged();
+            await Js.InvokeVoidAsync("Swal.fire", "Message", "Product has successfuly updated", "success");
+            await Task.Delay(2000);
+            isLoading = false;
+            StateHasChanged();
+
+        }
+    }
+}

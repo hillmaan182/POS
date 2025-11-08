@@ -1,0 +1,45 @@
+﻿@page "/inventory"
+@attribute [Authorize]
+@inject HttpClient httpClient
+@inject Application.ServiceHelper.IStringHelper help
+<h3 style="padding-top:50px;padding-bottom:25px">Inventory</h3>
+
+<MudButton Href="/inventory/add" Variant="Variant.Outlined">Add Inventory</MudButton>
+@if (obj == null)
+{
+    <MudPaper Class="pa-16 ma-2" Elevation="3">
+        <MudText Color="Color.Default"> No Data </MudText>
+    </MudPaper>
+}
+else
+{
+    <MudDataGrid Items="@obj">
+        <Columns>
+            <PropertyColumn Property="x => x.InventoryName" />
+            <PropertyColumn Property="x => x.Qty" />
+            <PropertyColumn Property="x => x.QtyDescription" />
+            <PropertyColumn Property="x => help.SetCurrency(x.Price.Value)" Title="Price (Rp.)" />
+        </Columns>
+    </MudDataGrid>
+}
+
+@code {
+    private List<Domain.Model.Inventory> obj;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            using (var client = new HttpClient())
+            {
+                client.BaseAddress = new Uri("http://poswebapi.runasp.net/");
+                obj = await client.GetFromJsonAsync<List<Domain.Model.Inventory>>("api/Inventory");
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+
+            throw new InvalidOperationException(ex.ToString());
+        }
+    }
+}
